@@ -35,7 +35,7 @@ void LEDAnzeige(){ //Hier wird die Temperatur auf die LED übertragen (inkl. Ska
     leds[led]=CRGB(55,0,0);
   }
   
-  //Hier die Skala
+  //Hier die Skala einbauen
   for(int zehner = min_Angezeigte_Temperatur; zehner <= max_Angezeigte_Temperatur; zehner = zehner +10){
     int Zehnerstelle = map(zehner, min_Angezeigte_Temperatur, max_Angezeigte_Temperatur, 0, NUM_LEDS);
     Serial.print("Zehnerstellen: ");
