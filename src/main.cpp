@@ -3,9 +3,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define NUM_LEDS 10 
+#define NUM_LEDS 57 
 CRGB leds[NUM_LEDS];
-#define PIN 0 
+#define PIN 14 
 
 #define ONE_WIRE_BUS 2 //Sensor DS18B20 am digitalen Pin 2
 
@@ -20,10 +20,10 @@ int temp = 60;
 
 int zaehler=0; //für while-schleife in loop
 
-int maxStrom = 1000; //milliAmpere
+int maxStrom = 10; //milliAmpere
 
-int min_Angezeigte_Temperatur = 20;  //minimale Temperatur der Anzeige
-int max_Angezeigte_Temperatur = 29;  //maximale Temperatur der Anzeige
+int min_Angezeigte_Temperatur = 0;  //minimale Temperatur der Anzeige
+int max_Angezeigte_Temperatur = 30;  //maximale Temperatur der Anzeige
 
 void showStrip() {
  #ifdef ADAFRUIT_NEOPIXEL_H 
@@ -81,6 +81,54 @@ void RGBLoop(){
   }
 }
 
+void BouncingBalls(byte red, byte green, byte blue, int BallCount) {
+  float Gravity = -9.81;
+  int StartHeight = 1;
+  
+  float Height[BallCount];
+  float ImpactVelocityStart = sqrt( -2 * Gravity * StartHeight );
+  float ImpactVelocity[BallCount];
+  float TimeSinceLastBounce[BallCount];
+  int   Position[BallCount];
+  long  ClockTimeSinceLastBounce[BallCount];
+  float Dampening[BallCount];
+  
+  for (int i = 0 ; i < BallCount ; i++) {   
+    ClockTimeSinceLastBounce[i] = millis();
+    Height[i] = StartHeight;
+    Position[i] = 0; 
+    ImpactVelocity[i] = ImpactVelocityStart;
+    TimeSinceLastBounce[i] = 0;
+    Dampening[i] = 0.90 - float(i)/pow(BallCount,2); 
+  }
+
+  while (true) {
+    wdt_reset();
+    for (int i = 0 ; i < BallCount ; i++) {
+      TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
+      Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
+  
+      if ( Height[i] < 0 ) {                      
+        Height[i] = 0;
+        ImpactVelocity[i] = Dampening[i] * ImpactVelocity[i];
+        ClockTimeSinceLastBounce[i] = millis();
+  
+        if ( ImpactVelocity[i] < 0.01 ) {
+          ImpactVelocity[i] = ImpactVelocityStart;
+        }
+      }
+      Position[i] = round( Height[i] * (NUM_LEDS - 1) / StartHeight);
+    }
+  
+    for (int i = 0 ; i < BallCount ; i++) {
+      setPixel(Position[i],red,green,blue);
+    }
+    
+    showStrip();
+    setAll(0,0,0);
+  }
+}
+
 void BouncingColoredBalls(int BallCount, byte colors[][3]) {
   float Gravity = -9.81;
   int StartHeight = 1;
@@ -126,6 +174,62 @@ void BouncingColoredBalls(int BallCount, byte colors[][3]) {
     showStrip();
     setAll(0,0,0);
   }
+}
+
+
+void setPixelHeatColor (int Pixel, byte temperature) {
+  // Scale 'heat' down from 0-255 to 0-191
+  byte t192 = round((temperature/255.0)*191);
+ 
+  // calculate ramp up from
+  byte heatramp = t192 & 0x3F; // 0..63
+  heatramp <<= 2; // scale up to 0..252
+ 
+  // figure out which third of the spectrum we're in:
+  if( t192 > 0x80) {                     // hottest
+    setPixel(Pixel, 255, 255, heatramp);
+  } else if( t192 > 0x40 ) {             // middle
+    setPixel(Pixel, 255, heatramp, 0);
+  } else {                               // coolest
+    setPixel(Pixel, heatramp, 0, 0);
+  }
+}
+
+
+void Fire(int Cooling, int Sparking, int SpeedDelay) {
+  static byte heat[NUM_LEDS];
+  int cooldown;
+  
+  // Step 1.  Cool down every cell a little
+  for( int i = 0; i < NUM_LEDS; i++) {
+    cooldown = random(0, ((Cooling * 10) / NUM_LEDS) + 2);
+    
+    if(cooldown>heat[i]) {
+      heat[i]=0;
+    } else {
+      heat[i]=heat[i]-cooldown;
+    }
+  }
+  
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  for( int k= NUM_LEDS - 1; k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+  }
+    
+  // Step 3.  Randomly ignite new 'sparks' near the bottom
+  if( random(255) < Sparking ) {
+    int y = random(7);
+    heat[y] = heat[y] + random(160,255);
+    //heat[y] = random(160,255);
+  }
+
+  // Step 4.  Convert heat to LED colors
+  for( int j = 0; j < NUM_LEDS; j++) {
+    setPixelHeatColor(j, heat[j] );
+  }
+
+  showStrip();
+  delay(SpeedDelay);
 }
 
 void printValue(float value, String text){
@@ -204,28 +308,47 @@ void setup()
  
  FastLED.addLeds<WS2811, PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
 
+
+
+byte colors2 [3] [3] = { {0xff, 0,0}, 
+                      {0xff, 0xff, 0xff}, 
+                      {0   , 0   , 0xff} };
+
  // limit my draw to xA at 5v of power draw
  FastLED.setMaxPowerInVoltsAndMilliamps(5,maxStrom);
+ wdt_disable (); //wdt_enable(WDTO_8S);
 }
 
 
 void loop() { 
-  //RGBLoop();
-  byte colors[3][3] = { {0xff, 0,0}, 
-                        {0, 0xff, 0},
-                        {0, 0, 0xff} };
+  
   do {
-    BouncingColoredBalls(3, colors);
+    Fire(55,120,15);
     zaehler++;
-  } while (zaehler<10);
+    wdt_reset ();
+  } while (zaehler<1000);
   zaehler = 0;
+  
 
   do {
     Temperaturanzeige();
     delay(1000);
     zaehler++;
+    Serial.println(zaehler);
+    wdt_reset ();
   } while (zaehler<10);
   zaehler =0;
+
+
+
+//BouncingBalls(0xff,0,0, 3);
+
+byte colors[3][3] = { {0xff, 0,0}, 
+                     {0xff, 0xff, 0}, 
+                    {0xff, 0 ,0} };
+BouncingColoredBalls(3, colors);
+  
+BouncingBalls(0xff,0,0, 3);
   //Temperaturanzeige();
   //delay(1000); //Pause von 1 Sekunde.
   }
