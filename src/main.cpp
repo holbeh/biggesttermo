@@ -102,7 +102,7 @@ void BouncingBalls(byte red, byte green, byte blue, int BallCount) {
     Dampening[i] = 0.90 - float(i)/pow(BallCount,2); 
   }
 
-  while (true) {
+  for (int i=0; i<5000; i++) {
     wdt_reset();
     for (int i = 0 ; i < BallCount ; i++) {
       TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
@@ -150,7 +150,8 @@ void BouncingColoredBalls(int BallCount, byte colors[][3]) {
     Dampening[i] = 0.90 - float(i)/pow(BallCount,2); 
   }
 
-  while (true) {
+  for (int h=0; h<5000; h++) {
+    wdt_reset ();
     for (int i = 0 ; i < BallCount ; i++) {
       TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
       Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
@@ -311,7 +312,7 @@ void setup()
 
 
 byte colors2 [3] [3] = { {0xff, 0,0}, 
-                      {0xff, 0xff, 0xff}, 
+                      {0, 0xff, 0}, 
                       {0   , 0   , 0xff} };
 
  // limit my draw to xA at 5v of power draw
@@ -329,23 +330,19 @@ void loop() {
   } while (zaehler<1000);
   zaehler = 0;
   
-
-  do {
-    Temperaturanzeige();
-    delay(1000);
-    zaehler++;
-    Serial.println(zaehler);
-    wdt_reset ();
-  } while (zaehler<10);
-  zaehler =0;
-
-
+  
+Temperaturanzeige();
+for (int i=0; i<10;i++){
+  wdt_reset ();
+  delay (1000);
+}
+  
 
 //BouncingBalls(0xff,0,0, 3);
 
 byte colors[3][3] = { {0xff, 0,0}, 
-                     {0xff, 0xff, 0}, 
-                    {0xff, 0 ,0} };
+                     {0, 0xff, 0}, 
+                    {00, 0 ,0xff} };
 BouncingColoredBalls(3, colors);
   
 BouncingBalls(0xff,0,0, 3);
