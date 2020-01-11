@@ -254,7 +254,6 @@ void LEDAnzeige(){ //Hier wird die Temperatur auf die LED übertragen (inkl. Ska
   }
   
   
-  //FastLED.show();
   showStrip();
   Serial.print("NUMTOLIGHT ");
   Serial.println(numLedsToLight);
@@ -290,6 +289,57 @@ void Temperaturanzeige(){
   LEDAnzeige();
 }
 
+
+void Sekundenanzeige(){ //Hier werden die Sekunden auf die LED übertragen 
+  setAll(0,0,0);
+  timeClient.update();
+  Serial.println(timeClient.getSeconds());
+  wdt_reset();
+  int numLedsToLight = map(timeClient.getSeconds(), 0, 60, 0, NUM_LEDS);
+  for(int led =0; led <= numLedsToLight; led++) {
+    //leds[led]=CRGB(55,0,0);
+    setPixel(led, 0,255,0);
+  }
+  
+  showStrip();
+}
+
+void Stundenanzeige(){ //Hier werden die Sekunden auf die LED übertragen 
+  setAll(0,0,0);
+  timeClient.update();
+  Serial.println(timeClient.getHours());
+  wdt_reset();
+  //int numLedsToLight = map((timeClient.getHours()%12), 0, 12, 0, 12);
+  int numLedsToLight = map((timeClient.getHours()%12), 0, 12, 0, (long)(NUM_LEDS/76.0*12.0));
+  Serial.print("Leds to show: ");
+  Serial.println(numLedsToLight);
+  for(int led =0; led < numLedsToLight; led++) {
+    //leds[led]=CRGB(55,0,0);
+    if (led%3==0){
+      setPixel(led, 0,255,255);
+    }
+    else{
+      setPixel(led, 0, 255, 0);
+    }
+  }
+
+  wdt_reset();
+  numLedsToLight = map((timeClient.getMinutes()), 0, 60, (long)(NUM_LEDS/76.0*0.0), (long)(NUM_LEDS/76.0*60.0));
+  Serial.print("Leds to show: ");
+  Serial.println(numLedsToLight);
+  for(int led =(int)(NUM_LEDS/76.0*16.0); led < numLedsToLight+(int)(NUM_LEDS/76.0*16.0); led++) {
+    //leds[led]=CRGB(55,0,0);
+    if ((led-(int)(NUM_LEDS/76.0*16.0))%15==0){
+    setPixel(led, 255,0,0);
+    }
+    else {
+      setPixel(led, 0,255,0);
+    }
+  }
+
+  showStrip();
+}
+
 void setup()
 {
  Serial.begin(9600); //Starten der seriellen Kommunikation mit 9600 baud
@@ -316,36 +366,38 @@ void setup()
 
 
 void loop() { 
-  timeClient.update();
+  //timeClient.update();
 
-  Serial.println(timeClient.getFormattedTime());
+  //Serial.println(timeClient.getFormattedTime());
 
-  do {
-    Fire(55,120,15);
-    zaehler++;
-    wdt_reset ();
-  } while (zaehler<1000);
-  zaehler = 0;
+  // do {
+  //   Fire(55,120,15);
+  //   zaehler++;
+  //   wdt_reset ();
+  // } while (zaehler<1000);
+  // zaehler = 0;
   
   
-Temperaturanzeige();
-for (int i=0; i<10;i++){
-  wdt_reset ();
-  delay (1000);
-}
+//Temperaturanzeige();
+  // for (int i=0; i<10;i++){
+  // wdt_reset ();
+  // delay (1000);
+  // }
   
 
 //BouncingBalls(0xff,0,0, 3);
 
-byte colors[3][3] = { {0xff, 0,0}, 
+  byte colors[3][3] = { {0xff, 0,0}, 
                      {0, 0xff, 0}, 
                     {00, 0 ,0xff} };
-BouncingColoredBalls(3, colors);
+ // BouncingColoredBalls(3, colors);
   
-BouncingBalls(0xff,0,0, 3);
+  //BouncingBalls(0xff,0,0, 3);
   //Temperaturanzeige();
   //delay(1000); //Pause von 1 Sekunde.
-  }
 
 
-
+  Stundenanzeige();
+  delay(800);
+  wdt_reset();
+}
