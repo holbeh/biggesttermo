@@ -2,28 +2,18 @@
 #include "FastLED.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
-
-#define NUM_LEDS 57 
-CRGB leds[NUM_LEDS];
-#define PIN 14 
-
-#define ONE_WIRE_BUS 2 //Sensor DS18B20 am digitalen Pin 2
+#include <NTPClient.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include "config.h"
 
 OneWire oneWire(ONE_WIRE_BUS); //
 
 //Übergabe der OnewWire Referenz zum kommunizieren mit dem Sensor.
 DallasTemperature sensors(&oneWire);
 
-int sensorCount;
-int Messung = 0;
-int temp = 60;
-
-int zaehler=0; //für while-schleife in loop
-
-int maxStrom = 10; //milliAmpere
-
-int min_Angezeigte_Temperatur = 0;  //minimale Temperatur der Anzeige
-int max_Angezeigte_Temperatur = 30;  //maximale Temperatur der Anzeige
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 
 void showStrip() {
  #ifdef ADAFRUIT_NEOPIXEL_H 
@@ -310,19 +300,26 @@ void setup()
  FastLED.addLeds<WS2811, PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
 
 
-
-byte colors2 [3] [3] = { {0xff, 0,0}, 
-                      {0, 0xff, 0}, 
-                      {0   , 0   , 0xff} };
-
  // limit my draw to xA at 5v of power draw
  FastLED.setMaxPowerInVoltsAndMilliamps(5,maxStrom);
  wdt_disable (); //wdt_enable(WDTO_8S);
+
+ WiFi.begin(ssid, password);
+
+  while ( WiFi.status() != WL_CONNECTED ) {
+    delay ( 500 );
+    Serial.print ( "." );
+  }
+
+  timeClient.begin();
 }
 
 
 void loop() { 
-  
+  timeClient.update();
+
+  Serial.println(timeClient.getFormattedTime());
+
   do {
     Fire(55,120,15);
     zaehler++;
