@@ -66,11 +66,13 @@ void setAll(byte red, byte green, byte blue) {
   showStrip();
 }
 
-#ifndef ADAFRUIT_NEOPIXEL_H
 void __inline setAll() {
+  #ifndef ADAFRUIT_NEOPIXEL_H
   memset(leds, (uint8_t)0, sizeof(CRGB)*NUM_LEDS);
+  #else
+  setAll(0,0,0);
+  #endif
 }
-#endif
 
 void RGBLoop(){
   for(int j = 0; j < 3; j++ ) { 
@@ -143,6 +145,7 @@ void BouncingBalls(byte red, byte green, byte blue, int BallCount) {
     showStrip();
     setAll();
   }
+  free(ClockTimeSinceLastBounce);
 }
 
 void BouncingColoredBalls(int BallCount, byte colors[][3]) {
@@ -191,6 +194,7 @@ void BouncingColoredBalls(int BallCount, byte colors[][3]) {
     showStrip();
     setAll();
   }
+  free(ClockTimeSinceLastBounce);
 }
 
 
@@ -470,6 +474,11 @@ void setup(){
  sensors.begin(); //Starten der Kommunikation mit dem Sensor
  sensorCount = sensors.getDS18Count(); //Lesen der Anzahl der angeschlossenen Temperatursensoren.
  
+  if (leds == NULL) {
+    Serial.println("bad malloc");
+    ESP.restart();
+  }
+
  FastLED.addLeds<WS2811, PIN, GRB>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
 
 
