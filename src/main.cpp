@@ -10,7 +10,7 @@
 
 OneWire oneWire(ONE_WIRE_BUS); //
 
-CRGB leds[NUM_LEDS];
+CRGB *leds = (CRGB*)calloc(NUM_LEDS, sizeof(CRGB));
 
 int sensorCount;
 int Messung = 0;
@@ -465,10 +465,11 @@ void setup(){
 
  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-while ( WiFi.status() != WL_CONNECTED ) {
-  delay ( 500 );
-  Serial.print ( "." );
-}
+  while ( WiFi.status() != WL_CONNECTED ) {
+    delay ( 500 );
+    Serial.print ( "." );
+  }
+  Serial.println();
 
   timeClient.begin();
 }
