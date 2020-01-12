@@ -15,6 +15,9 @@ DallasTemperature sensors(&oneWire);
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 
+void __inline drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3]);
+void drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3], bool needed);
+
 void showStrip() {
  #ifdef ADAFRUIT_NEOPIXEL_H 
    // NeoPixel
@@ -290,28 +293,89 @@ void Temperaturanzeige(){
 }
 
 
-void Sekundenanzeige(){ //Hier werden die Sekunden auf die LED übertragen 
+void Zeitanzeige(){ 
+
+  //++++++++++Anzeige Stunden++++++++++++
   setAll(0,0,0);
   timeClient.update();
-  Serial.println(timeClient.getSeconds());
+  Serial.print("Stunden: "); Serial.println(timeClient.getHours());
   wdt_reset();
-  int numLedsToLight = map(timeClient.getSeconds(), 0, 60, 0, NUM_LEDS);
-  for(int led =0; led <= numLedsToLight; led++) {
+  float PixelSize = NUM_LEDS/76.0;
+  Serial.print("PixelSize; "); Serial.println(PixelSize);
+  for(int led =0; led < ((timeClient.getHours())%12)*PixelSize; led++) {
     //leds[led]=CRGB(55,0,0);
-    setPixel(led, 0,255,0);
+    if (led%(int)(3*PixelSize)==0){
+      setPixel(led, 255,0,0);
+    }
+    else{
+      setPixel(led, 0, 255, 0);
+    }
   }
+
+  //++++++++++Anzeige Minuten++++++++++++
+  wdt_reset();
+  byte  color [3]  ={0,255,0};
+  byte altcolor[3] =  {  255, 0 ,0};
+  byte doppelaltcolor[3] ={0,0,255};
+  drawpixel(PixelSize, 0, 16, 10, color, doppelaltcolor);
+  for (int i = 1; i<=timeClient.getMinutes(); i++){
+    drawpixel(PixelSize, i, 16,  10, color, altcolor);
+  }
+
+  wdt_reset();
+/*
+  color[0] = 7;
+  color[1] = 227;
+  color[2] = 247;
+
   
+  altcolor[0] = 255;
+  altcolor[1] = 255;
+  altcolor[2] = 255;
+ 
+  drawpixel(PixelSize, timeClient.getSeconds(), 16,  10, color, altcolor, true);
+
+*/
+ 
+
   showStrip();
+  
 }
 
-void Stundenanzeige(){ //Hier werden die Sekunden auf die LED übertragen 
+void __inline drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3]) {
+  drawpixel(PixelSize, Offset, StartPoint, Divisor, color, altColor, false);
+}
+
+void drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3], bool needed){
+  float pxSize = PixelSize;
+  if ((int)(Offset*PixelSize)==0) {
+    pxSize = 1.0;
+  }
+  if (needed && NUM_LEDS/76.0 < 1.0)
+    pxSize = 1.0;
+  if(Offset%Divisor==0){
+    for (int i = PixelSize*StartPoint+(pxSize*(Offset-1)); i < (int)(PixelSize*StartPoint+pxSize*Offset); i++)
+    {
+      setPixel(i, altColor[0], altColor[1], altColor[2]);
+    }
+  } else {
+    for (int i = PixelSize*StartPoint+(pxSize*(Offset-1)); i < (int)(PixelSize*StartPoint+pxSize*Offset); i++)
+    {
+      setPixel(i, color[0], color[1], color[2]);
+    }
+  }
+
+}
+
+/*
+void Zeitanzeige(){ //Hier werden die Sekunden auf die LED übertragen 
   setAll(0,0,0);
   timeClient.update();
   Serial.println(timeClient.getHours());
   wdt_reset();
   //int numLedsToLight = map((timeClient.getHours()%12), 0, 12, 0, 12);
   int numLedsToLight = map((timeClient.getHours()%12), 0, 12, 0, (long)(NUM_LEDS/76.0*12.0));
-  Serial.print("Leds to show: ");
+  Serial.print("Leds to show Stunden: ");
   Serial.println(numLedsToLight);
   for(int led =0; led < numLedsToLight; led++) {
     //leds[led]=CRGB(55,0,0);
@@ -325,11 +389,12 @@ void Stundenanzeige(){ //Hier werden die Sekunden auf die LED übertragen
 
   wdt_reset();
   numLedsToLight = map((timeClient.getMinutes()), 0, 60, (long)(NUM_LEDS/76.0*0.0), (long)(NUM_LEDS/76.0*60.0));
-  Serial.print("Leds to show: ");
+  Serial.print("Leds to show Minuten: ");
   Serial.println(numLedsToLight);
   for(int led =(int)(NUM_LEDS/76.0*16.0); led < numLedsToLight+(int)(NUM_LEDS/76.0*16.0); led++) {
     //leds[led]=CRGB(55,0,0);
-    if ((led-(int)(NUM_LEDS/76.0*16.0))%15==0){
+    if (led%15==0){
+    //if ((led-(int)(NUM_LEDS/76.0*16.0))%15==0){
     setPixel(led, 255,0,0);
     }
     else {
@@ -337,11 +402,35 @@ void Stundenanzeige(){ //Hier werden die Sekunden auf die LED übertragen
     }
   }
 
-  showStrip();
-}
+ wdt_reset();
+  numLedsToLight = map((timeClient.getSeconds()), 0, 60, 0, NUM_LEDS);
+  Serial.print("Leds to show sekunden : ");
+  Serial.println(numLedsToLight);
+  Serial.println(timeClient.getSeconds());
+  if ((int)(NUM_LEDS/76.0*1.0)!=0){
+  for (int led=numLedsToLight; led > numLedsToLight-(int)(NUM_LEDS/76.0*1.0); led--){
+    if (numLedsToLight%15==0){
+    setPixel(led, 255,255,255);
+    }
+    else {
+      setPixel(led, 0,0,255);
+    }
+  }
+  }
+  else {
+    if (numLedsToLight%15==0){
+      setPixel(numLedsToLight, 255,255,255);
+    }
+    else {
+      setPixel(numLedsToLight, 0,0,255);
+    }
+  }
 
-void setup()
-{
+
+  showStrip();
+}*/
+
+void setup(){
  Serial.begin(9600); //Starten der seriellen Kommunikation mit 9600 baud
  Serial.println("Temperatursensor - DS18B20"); 
  sensors.begin(); //Starten der Kommunikation mit dem Sensor
@@ -369,35 +458,41 @@ void loop() {
   //timeClient.update();
 
   //Serial.println(timeClient.getFormattedTime());
-
-  // do {
-  //   Fire(55,120,15);
-  //   zaehler++;
-  //   wdt_reset ();
-  // } while (zaehler<1000);
-  // zaehler = 0;
+ Serial.println("Fire");
+  do {
+    Fire(55,120,15);
+    zaehler++;
+    wdt_reset ();
+  } while (zaehler<1000);
+  zaehler = 0;
   
+  Serial.println("Temperatur"); 
+Temperaturanzeige();
+  for (int i=0; i<10;i++){
+  wdt_reset ();
+  delay (1000);
+  }
   
-//Temperaturanzeige();
-  // for (int i=0; i<10;i++){
-  // wdt_reset ();
-  // delay (1000);
-  // }
-  
+ Serial.println("Bounce 1 color");
+BouncingBalls(0xff,0,0, 3);
 
-//BouncingBalls(0xff,0,0, 3);
-
+ Serial.println("Bounce 3 color");
   byte colors[3][3] = { {0xff, 0,0}, 
                      {0, 0xff, 0}, 
                     {00, 0 ,0xff} };
- // BouncingColoredBalls(3, colors);
+ BouncingColoredBalls(3, colors);
   
-  //BouncingBalls(0xff,0,0, 3);
+ //Serial.println("Temperatur");
   //Temperaturanzeige();
   //delay(1000); //Pause von 1 Sekunde.
+ Serial.println("Zeit");
+for (int i=0; i<60;i++){
+  Zeitanzeige();
+  wdt_reset ();
+  delay (1000);
+  }
 
-
-  Stundenanzeige();
-  delay(800);
   wdt_reset();
+ Serial.println("Bounce 1 color");
+  BouncingBalls(0xff,0,0, 3);
 }
