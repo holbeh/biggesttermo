@@ -1,13 +1,22 @@
 #include <Arduino.h>
-#include "FastLED.h"
+#include <FastLED.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <NTPClient.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+
 #include "config.h"
 
 OneWire oneWire(ONE_WIRE_BUS); //
+
+CRGB leds[NUM_LEDS];
+
+int sensorCount;
+int Messung = 0;
+int temp = 60;
+
+int zaehler=0; //für while-schleife in loop
 
 //Übergabe der OnewWire Referenz zum kommunizieren mit dem Sensor.
 DallasTemperature sensors(&oneWire);
@@ -443,12 +452,12 @@ void setup(){
  FastLED.setMaxPowerInVoltsAndMilliamps(5,maxStrom);
  wdt_disable (); //wdt_enable(WDTO_8S);
 
- WiFi.begin(ssid, password);
+ WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  while ( WiFi.status() != WL_CONNECTED ) {
-    delay ( 500 );
-    Serial.print ( "." );
-  }
+while ( WiFi.status() != WL_CONNECTED ) {
+  delay ( 500 );
+  Serial.print ( "." );
+}
 
   timeClient.begin();
 }
