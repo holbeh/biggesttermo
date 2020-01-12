@@ -13,6 +13,7 @@ jobs:
           python-version: '3.x'
       - name: Install Platform IO
         run: |
+          cp src/config.def.h src/config.h
           python -m pip install --upgrade pip
           pip install -U platformio
       - name: Build
