@@ -38,7 +38,7 @@ void showStrip() {
  #endif
 }
 
-void setPixel(int Pixel, byte red, byte green, byte blue) {
+void __inline setPixel(int Pixel, byte red, byte green, byte blue) {
  #ifdef ADAFRUIT_NEOPIXEL_H 
    // NeoPixel
    strip.setPixelColor(Pixel, strip.Color(red, green, blue));
@@ -52,11 +52,25 @@ void setPixel(int Pixel, byte red, byte green, byte blue) {
 }
 
 void setAll(byte red, byte green, byte blue) {
-  for(int i = 0; i < NUM_LEDS; i++ ) {
-    setPixel(i, red, green, blue); 
+  #ifndef ADAFRUIT_NEOPIXEL_H
+  if (red == 0 && green == 0 && blue == 0) {
+    memset(leds, (uint8_t)0, sizeof(CRGB)*NUM_LEDS);
+  } else {
+  #endif
+    for(int i = 0; i < NUM_LEDS; i++ ) {
+      setPixel(i, red, green, blue); 
+    }
+  #ifndef ADAFRUIT_NEOPIXEL_H
   }
+  #endif
   showStrip();
 }
+
+#ifndef ADAFRUIT_NEOPIXEL_H
+void __inline setAll() {
+  memset(leds, (uint8_t)0, sizeof(CRGB)*NUM_LEDS);
+}
+#endif
 
 void RGBLoop(){
   for(int j = 0; j < 3; j++ ) { 
@@ -92,7 +106,7 @@ void BouncingBalls(byte red, byte green, byte blue, int BallCount) {
   float ImpactVelocity[BallCount];
   float TimeSinceLastBounce[BallCount];
   int   Position[BallCount];
-  long  ClockTimeSinceLastBounce[BallCount];
+  long *ClockTimeSinceLastBounce = (long *)calloc(BallCount, sizeof(long));
   float Dampening[BallCount];
   
   for (int i = 0 ; i < BallCount ; i++) {   
@@ -127,7 +141,7 @@ void BouncingBalls(byte red, byte green, byte blue, int BallCount) {
     }
     
     showStrip();
-    setAll(0,0,0);
+    setAll();
   }
 }
 
@@ -140,7 +154,7 @@ void BouncingColoredBalls(int BallCount, byte colors[][3]) {
   float ImpactVelocity[BallCount];
   float TimeSinceLastBounce[BallCount];
   int   Position[BallCount];
-  long  ClockTimeSinceLastBounce[BallCount];
+  long *ClockTimeSinceLastBounce = (long *)calloc(BallCount, sizeof(long));
   float Dampening[BallCount];
   
   for (int i = 0 ; i < BallCount ; i++) {   
@@ -175,7 +189,7 @@ void BouncingColoredBalls(int BallCount, byte colors[][3]) {
     }
     
     showStrip();
-    setAll(0,0,0);
+    setAll();
   }
 }
 
@@ -235,7 +249,7 @@ void Fire(int Cooling, int Sparking, int SpeedDelay) {
   delay(SpeedDelay);
 }
 
-void printValue(float value, String text){
+void __inline printValue(float value, String text){
   Serial.print("\t\t");
   Serial.print(value);
   Serial.println(text);
@@ -257,7 +271,7 @@ void LEDAnzeige(){ //Hier wird die Temperatur auf die LED übertragen (inkl. Ska
     setPixel(Zehnerstelle, 0,55,0);
   }
 
-    for(int fuenfer = min_Angezeigte_Temperatur+5; fuenfer <= max_Angezeigte_Temperatur; fuenfer = fuenfer +10){
+  for(int fuenfer = min_Angezeigte_Temperatur+5; fuenfer <= max_Angezeigte_Temperatur; fuenfer = fuenfer +10){
     int Fuenferstelle = map(fuenfer, min_Angezeigte_Temperatur, max_Angezeigte_Temperatur, 0, NUM_LEDS);
     //Serial.print("Fuenferstellen: ");
     //Serial.println(Fuenferstelle);
@@ -272,7 +286,7 @@ void LEDAnzeige(){ //Hier wird die Temperatur auf die LED übertragen (inkl. Ska
 }
 
 void TempMessung(){
-   if(sensorCount ==0){
+   if(sensorCount == 0){
    Serial.println("Es wurde kein Temperatursensor gefunden!");
    Serial.println("Bitte überprüfe deine Schaltung!");
  }
@@ -297,7 +311,7 @@ void TempMessung(){
 void Temperaturanzeige(){
   TempMessung();
   //FastLED.clear();
-  setAll(0,0,0);
+  setAll();
   LEDAnzeige();
 }
 
@@ -305,7 +319,7 @@ void Temperaturanzeige(){
 void Zeitanzeige(){ 
 
   //++++++++++Anzeige Stunden++++++++++++
-  setAll(0,0,0);
+  setAll();
   timeClient.update();
   Serial.print("Stunden: "); Serial.println(timeClient.getHours());
   wdt_reset();
@@ -479,7 +493,7 @@ void loop() {
   //timeClient.update();
 
   //Serial.println(timeClient.getFormattedTime());
- Serial.println("Fire");
+  Serial.println("Fire");
   do {
     Fire(55,120,15);
     zaehler++;
@@ -488,32 +502,32 @@ void loop() {
   zaehler = 0;
   
   Serial.println("Temperatur"); 
-Temperaturanzeige();
+  Temperaturanzeige();
   for (int i=0; i<10;i++){
-  wdt_reset ();
-  delay (1000);
+    wdt_reset ();
+    delay (1000);
   }
   
- Serial.println("Bounce 1 color");
-BouncingBalls(0xff,0,0, 3);
+  Serial.println("Bounce 1 color");
+  BouncingBalls(0xff,0,0, 3);
 
- Serial.println("Bounce 3 color");
+  Serial.println("Bounce 3 color");
   byte colors[3][3] = { {0xff, 0,0}, 
                      {0, 0xff, 0}, 
                     {00, 0 ,0xff} };
- BouncingColoredBalls(3, colors);
+  BouncingColoredBalls(3, colors);
   
- //Serial.println("Temperatur");
+  //Serial.println("Temperatur");
   //Temperaturanzeige();
   //delay(1000); //Pause von 1 Sekunde.
- Serial.println("Zeit");
-for (int i=0; i<60;i++){
-  Zeitanzeige();
-  wdt_reset ();
-  delay (1000);
+  Serial.println("Zeit");
+  for (int i=0; i<60;i++){
+    Zeitanzeige();
+    wdt_reset ();
+    delay (1000);
   }
 
   wdt_reset();
- Serial.println("Bounce 1 color");
+  Serial.println("Bounce 1 color");
   BouncingBalls(0xff,0,0, 3);
 }
