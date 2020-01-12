@@ -323,12 +323,23 @@ void Zeitanzeige(){
 
   //++++++++++Anzeige Minuten++++++++++++
   wdt_reset();
-  byte  color [3]  ={0,255,0};
-  byte altcolor[3] =  {  255, 0 ,0};
-  byte doppelaltcolor[3] ={0,0,255};
-  drawpixel(PixelSize, 0, 16, 10, color, doppelaltcolor);
+  byte *color = (byte *)malloc(sizeof(byte)*6);
+  if (color == NULL) {
+    Serial.println("bad malloc");
+    return;
+  }
+  color[0] = 0;
+  color[1] = 255;
+  color[2] = 0;
+  color[3] = 0;
+  color[4] = 0;
+  color[5] = 255;
+  drawpixel(PixelSize, 0, 16, 10, color, color+3);
+  color[3] = 255;
+  color[5] = 0;
+  //byte altcolor[3] =  {  255, 0 ,0};
   for (int i = 1; i<=timeClient.getMinutes(); i++){
-    drawpixel(PixelSize, i, 16,  10, color, altcolor);
+    drawpixel(PixelSize, i, 16,  10, color, color+3);
   }
 
   wdt_reset();
@@ -346,16 +357,16 @@ void Zeitanzeige(){
 
 */
  
-
+  free(color);
   showStrip();
   
 }
 
-void __inline drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3]) {
+void __inline drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte *color, byte *altColor) {
   drawpixel(PixelSize, Offset, StartPoint, Divisor, color, altColor, false);
 }
 
-void drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3], bool needed){
+void drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte *color, byte *altColor, bool needed){
   float pxSize = PixelSize;
   if ((int)(Offset*PixelSize)==0) {
     pxSize = 1.0;
