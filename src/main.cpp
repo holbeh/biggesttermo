@@ -16,13 +16,15 @@ int sensorCount;
 int Messung = 0;
 int temp = 60;
 
+
+
 int zaehler=0; //für while-schleife in loop
 
 //Übergabe der OnewWire Referenz zum kommunizieren mit dem Sensor.
 DallasTemperature sensors(&oneWire);
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
+NTPClient timeClient(ntpUDP, "de.pool.ntp.org", 3600, 60000);
 
 void __inline drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3]);
 void drawpixel(float PixelSize, int Offset, int StartPoint, int Divisor, byte color[3], byte altColor[3], bool needed);
@@ -260,10 +262,19 @@ void __inline printValue(float value, String text){
 }
 
 void LEDAnzeige(){ //Hier wird die Temperatur auf die LED übertragen (inkl. Skala)
+setAll();
+
+  int Nullpkt = map (0, min_Angezeigte_Temperatur, max_Angezeigte_Temperatur, 0, NUM_LEDS);
   int numLedsToLight = map(temp, min_Angezeigte_Temperatur, max_Angezeigte_Temperatur, 0, NUM_LEDS);
+
   for(int led =0; led <= numLedsToLight; led++) {
     //leds[led]=CRGB(55,0,0);
-    setPixel(led, 55,0,0);
+    if (led < Nullpkt){
+     setPixel(led, 0,0,255);
+    }
+    else{
+      setPixel(led, 255,0,0);
+    }
   }
   
   //Hier die Skala einbauen
@@ -272,17 +283,21 @@ void LEDAnzeige(){ //Hier wird die Temperatur auf die LED übertragen (inkl. Ska
     Serial.print("Zehnerstellen: ");
     Serial.println(Zehnerstelle);
     //leds[Zehnerstelle]=CRGB(0,55,0);
-    setPixel(Zehnerstelle, 0,55,0);
+    setPixel(Zehnerstelle, 255,255,255);
   }
 
+  setPixel(Nullpkt, 255, 255, 0);
+
+  /*
+  ----------5er Skala - wenn erforderlich
   for(int fuenfer = min_Angezeigte_Temperatur+5; fuenfer <= max_Angezeigte_Temperatur; fuenfer = fuenfer +10){
     int Fuenferstelle = map(fuenfer, min_Angezeigte_Temperatur, max_Angezeigte_Temperatur, 0, NUM_LEDS);
     //Serial.print("Fuenferstellen: ");
     //Serial.println(Fuenferstelle);
     //leds[Fuenferstelle]=CRGB(55,55,0);
-    setPixel(Fuenferstelle, 0, 55, 55);
+    setPixel(Fuenferstelle, 0, 127, 0);
   }
-  
+  */
   
   showStrip();
   Serial.print("NUMTOLIGHT ");
@@ -317,6 +332,20 @@ void Temperaturanzeige(){
   //FastLED.clear();
   setAll();
   LEDAnzeige();
+}
+
+void rw_blink(){
+  setAll();
+  for (int i=0; i<4; i++){
+    setPixel(NUM_LEDS-i, 20,0,0);
+  }
+  showStrip();
+  delay (3141);
+  for (int i=0; i<4; i++){
+    setPixel(NUM_LEDS-i, 255,255,255);
+  }
+  showStrip();
+  delay (50); 
 }
 
 
@@ -499,9 +528,7 @@ void setup(){
 
 
 void loop() { 
-  //timeClient.update();
-
-  //Serial.println(timeClient.getFormattedTime());
+/*
   Serial.println("Fire");
   do {
     Fire(55,120,15);
@@ -509,16 +536,16 @@ void loop() {
     wdt_reset ();
   } while (zaehler<1000);
   zaehler = 0;
-  
+  */
   Serial.println("Temperatur"); 
   Temperaturanzeige();
-  for (int i=0; i<10;i++){
+  for (int i=0; i<30;i++){
     wdt_reset ();
     delay (1000);
   }
-  
+  /*
   Serial.println("Bounce 1 color");
-  BouncingBalls(0xff,0,0, 3);
+  BouncingBalls(0,0xff,0, 3);
 
   Serial.println("Bounce 3 color");
   byte colors[3][3] = { {0xff, 0,0}, 
@@ -539,4 +566,10 @@ void loop() {
   wdt_reset();
   Serial.println("Bounce 1 color");
   BouncingBalls(0xff,0,0, 3);
+  */
+
+  for (int i=0; i<10; i++){
+  rw_blink();
+  wdt_reset();
+  } 
 }
